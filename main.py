@@ -34,10 +34,16 @@ def check(line: str) -> None:
     problems = []
     if not line.strip():
         problems.append("line is empty or only whitespace")
+    if line != line.strip():
+        problems.append("line has leading or trailing whitespace")
     if len(line) > LIMIT:
         problems.append(f"line is {len(line)} chars, over the {LIMIT} limit")
     if any(c in line for c in "\n\r"):
         problems.append("line must fit on a single line")
+    if any(ord(c) < 0x20 for c in line):
+        problems.append("line contains control characters")
+    if "  " in line:
+        problems.append("line contains a double space")
     if problems:
         raise SystemExit("invalid roast: " + "; ".join(problems))
 
@@ -46,6 +52,9 @@ def run() -> None:
     check(ROAST)
     DESTINATION.parent.mkdir(parents=True, exist_ok=True)
     DESTINATION.write_text(ROAST, encoding="utf-8", newline="")
+    # Round-trip: the file on disk must be exactly the line we checked.
+    if DESTINATION.read_text(encoding="utf-8") != ROAST:
+        raise SystemExit("round-trip mismatch: file differs from roast")
     print(f"wrote {len(ROAST)} chars to {DESTINATION}")
 
 
